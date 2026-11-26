@@ -1,0 +1,71 @@
+name: Verify and publish master panel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: acceptance
+          POSTGRES_DB: lashes_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn typecheck
+      - run: yarn build
+      - run: yarn test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:acceptance@localhost:5432/lashes_test
+
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: yarn install --frozen-lockfile
+      - id: pages
+        uses: actions/configure-pages@v5
+      - run: yarn build:admin
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/admin/dist
+      - id: deploy
+        uses: actions/deploy-pages@v4

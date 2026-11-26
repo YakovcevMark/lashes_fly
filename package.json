@@ -1,0 +1,38 @@
+{
+  "name": "lashes-fly",
+  "private": true,
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "yarn build:api && concurrently -k -n admin,types,api,worker \"yarn dev:admin\" \"tsc -p apps/backend/tsconfig.json --watch --preserveWatchOutput\" \"yarn dev:api\" \"yarn dev:worker\"",
+    "dev:admin": "yarn workspace @lashes/admin dev",
+    "dev:api": "node --env-file-if-exists=.env --watch apps/backend/dist/main.js",
+    "dev:worker": "node --env-file-if-exists=.env --watch apps/backend/dist/worker.js",
+    "build": "yarn build:api && yarn build:admin",
+    "build:api": "yarn workspace @lashes/backend build",
+    "build:admin": "yarn workspace @lashes/admin build",
+    "typecheck": "yarn workspace @lashes/backend typecheck && yarn workspace @lashes/admin typecheck",
+    "lint": "eslint apps packages",
+    "migrate": "node --env-file-if-exists=.env apps/backend/dist/db/migrate.js",
+    "start:api": "node --env-file-if-exists=.env apps/backend/dist/main.js",
+    "start:worker": "node --env-file-if-exists=.env apps/backend/dist/worker.js",
+    "test": "yarn build:api && node --test apps/backend/dist/tests/session.test.js",
+    "bot:check": "node --env-file-if-exists=.env apps/backend/dist/telegram/check-bot.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.48.0"
+  }
+}
