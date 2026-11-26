@@ -1,0 +1,79 @@
+openapi: 3.1.0
+info:
+  title: Lashes Fly Admin API
+  version: 0.1.0
+servers:
+  - url: /api/v1
+paths:
+  /session/telegram/start:
+    post:
+      operationId: startTelegramLogin
+      responses:
+        '200':
+          description: Navigate to the authorization URL and keep the browser key in the initiating tab.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, browserKey]
+                properties:
+                  authorizationUrl: { type: string, format: uri }
+                  browserKey: { type: string }
+        '503': { description: Telegram Login has not been configured. }
+  /session/telegram/complete:
+    post:
+      operationId: completeTelegramLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, state, browserKey]
+              properties:
+                code: { type: string }
+                state: { type: string }
+                browserKey: { type: string }
+      responses:
+        '200':
+          description: Master session issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, session]
+                properties:
+                  accessToken: { type: string }
+                  session: { $ref: '#/components/schemas/MasterSession' }
+        '400': { description: Invalid callback body. }
+        '401': { description: Invalid or expired proof or browser binding. }
+        '403': { description: Valid Telegram identity without master access. }
+        '502': { description: Telegram verification unavailable. }
+        '503': { description: Telegram Login has not been configured. }
+  /session:
+    get:
+      operationId: getMasterSession
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current authenticated session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MasterSession' }
+        '401': { description: Missing, revoked or expired session. }
+    delete:
+      operationId: revokeMasterSession
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Credential revoked. May be repeated. }
+        '401': { description: Missing or malformed credential. }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  schemas:
+    MasterSession:
+      type: object
+      required: [telegramId, expiresAt]
+      properties:
+        telegramId: { type: string, pattern: '^[0-9]+$' }
+        expiresAt: { type: string, format: date-time }

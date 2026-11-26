@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@api/*": ["src/api/*"],
+      "@pages/*": ["src/pages/*"],
+      "@assets/*": ["src/assets/*"],
+      "@components/*": ["src/components/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}
